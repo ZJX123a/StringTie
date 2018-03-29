@@ -5,7 +5,7 @@ import java.math.*;
 public class baseOptions {
 	long kmer_int_val; 
 	static final int g_kmer_length=25;
-	char int_to_base[] = { 'A','C','G','T' };
+	static char int_to_base[] = { 'A','C','G','T' };
 	//ASCII码：A65 C67 G71 T84 a97 c99 g103 t116
 	int base_to_int[] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, //   0-19
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, //  20-39
@@ -68,7 +68,7 @@ public class baseOptions {
 		return reverseString;
 	}
 
-	char intToBase(int c) {
+	static char intToBase(int c) {
 		if (c < 0 || c>3) {
 			System.out.println("[警告！] int_val不在0-3内！");
 			//exit(1);
@@ -99,8 +99,8 @@ public class baseOptions {
 
 	
 
-	String intvalToKmer(long int_val,int kmer_length) {
-		String kmer = null;
+	public static String intvalToKmer(long int_val,int kmer_length) {
+		String kmer = "";
 		int c;
 		char base;
 		for (int i = kmer_length-1;i >=0;i--) {

@@ -34,11 +34,6 @@ public class load_Read {
 			e.printStackTrace();
 		}
 	   }
-public static void main(String args[]) throws IOException{
-	load_reads();
-	kmerHash kh=new kmerHash();
-	kh.readsToKmer();
-}
 
 
 }
