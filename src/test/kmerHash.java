@@ -166,7 +166,7 @@ System.out.println(kmer_hash.size());
 		}
 	}
 
-	public void sort_kmer(Map<Long, Vector<Integer>> kmer_hash) {
+	public List sort_kmer(Map<Long, Vector<Integer>> kmer_hash) {
 
 		Long key;
 		Long count;
@@ -189,7 +189,7 @@ System.out.println(kmer_hash.size());
 		// kmer_length) + ":" + mapping.getValue()
 		// + " intval:" + mapping.getKey());
 		// }
-
+return list;
 	}
 
 	public static void main(String args[]) throws IOException {
@@ -203,10 +203,17 @@ System.out.println(kmer_hash.size());
 		kh.delete_bad_kmers(kh.kmer_hash);
 		// kh.get_reverse_candidates(110653935488931, kh.kmer_hash);
 		kh.sort_kmer(kh.kmer_hash);
+		List listK=kh.sort_kmer(kh.kmer_hash);
+		if(listK.size()==0){
+			System.out.println("没有数据！");
+			return;
+		}
 		System.out.println("***********************");
 		// System.out.println(kh.list.toString());
-		create_graph cg = new create_graph();
-		cg.init_graph(kh);
+		//create_graph cg = new create_graph();
+		//cg.init_graph(kh);
+		SplicingGraph sg=new SplicingGraph();
+		sg.init_graph(kh);
 		System.out.println("---------------------------------");
 		// String kmer= baseOptions.intvalToKmer(110653935488931l,
 		// kh.kmer_length);
