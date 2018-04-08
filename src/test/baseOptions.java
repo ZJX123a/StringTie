@@ -149,7 +149,9 @@ public class baseOptions {
 			int c=baseToInt(kmer.charAt(i));
 			intval =intval<< 2;
 			intval |= c;
+			//System.out.println(intval);
 		}
+		
 		return intval;
 		//return 0;
 	}
