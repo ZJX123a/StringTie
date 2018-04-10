@@ -229,22 +229,27 @@ public class kmerHash {
 		// cg.init_graph(kh);
 		int count=0;
 		Set node_jihe=new HashSet();
-		for(int i=0;i<50;i++){
-			SplicingGraph sg = new SplicingGraph();
+		SplicingGraph sg = new SplicingGraph();
+		for(int i=0;i<3000;i++){
+			
 			if(!sg.has_been_used(kh.list.get(i).getKey())){
 		    sg.init_trunk(kh,kh.list.get(i).getKey(),node_jihe);
+			//	sg.bulid_graph(kh, kh.list.get(i).getKey(), node_jihe);
 		    System.out.println("-----------------------------");
 		    count++;
 		    }
 		}
 		System.out.println(node_jihe.size());
 		System.out.println("优化开始！");
-		SplicingGraph sg = new SplicingGraph();
+		//SplicingGraph sg = new SplicingGraph();
 		sg.rewrite_nodeSet(node_jihe);
+		sg.forward_check_and_extend(kh, 0);
 //		SplicingGraph sg = new SplicingGraph();
 //	    sg.init_trunk(kh,kh.list.get(0).getKey());
 //		// sg.init_graph(kh);
-		System.out.println("结束！"+"node_jihe:"+sg.node_set.get(0).getSequence());
+		//sg.bulid_graph(kh, seed_val, node_jihe)
+		System.out.println("构图之后："+sg.node_set.size());
+		System.out.println("结束！"+"顶点长度"+sg.node_set.get(0).getSequence().length()+"     "+sg.node_set.get(0).getSequence());
 		// String kmer= baseOptions.intvalToKmer(110653935488931l,
 		// kh.kmer_length);
 		// long kmer_int=110653935488931l>>2;

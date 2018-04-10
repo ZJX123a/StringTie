@@ -16,6 +16,7 @@ public class SplicingGraph {
 	Vector<Node> node_set = new Vector<Node>();
 	Set<Long> restore_kmers = new HashSet<Long>();
 	Set<Integer> forward_branches= new HashSet<Integer>();
+	Set<Integer> reverse_branches= new HashSet<Integer>();
 	public class Node {
 		private Vector<Integer> parents = new Vector<Integer>();
 		private Vector<Integer> children = new Vector<Integer>();
@@ -725,15 +726,15 @@ public class SplicingGraph {
 		}
 	}
 
-	// public boolean bulid_graph(kmerHash kh, long seed_val) {
-	//
-	// if (!init_trunk(kh, seed_val)) {
-	// return false;
-	// }
-	//
-	// return false;
-	//
-	// }
+//	 public boolean bulid_graph(kmerHash kh, long seed_val,Set node_jihe) {
+//	
+//	 if (!init_trunk(kh, seed_val,node_jihe)) {
+//	 return false;
+//	 }
+//	 forward_check_and_extend(kh,0);
+//	 return true;
+//	
+//	 }
 
 	public void forward_check_and_extend(kmerHash kh, int node_index) {
 		int length = node_set.get(node_index).sequence.length() - kh.kmer_length;
@@ -746,7 +747,7 @@ public class SplicingGraph {
 			String kmer = node_set.get(node_index).sequence.substring(i, i + kh.kmer_length);
 			long intval = baseOptions.kmerToIntval(kmer);
 			candidates = kh.get_forward_candidates(intval, kh.kmer_hash);
-			if (candidates.size() == 0) {
+			if (candidates==null) {
 				continue;
 			}
 			long candidate = 0l;
@@ -759,9 +760,192 @@ public class SplicingGraph {
 			}
 
 		}
-		grow_and_branch(kmer_map, data, p, bifurcation_points);
+		grow_and_branch(kh, node_index, bifurcations);
 	}
 
+	public void reverse_check_and_extend(kmerHash kh, int node_index) {
+		int length = node_set.get(node_index).sequence.length() - kh.kmer_length;
+		Vector<Long> bifurcations = new Vector<Long>();
+		List<Map.Entry<Long, Long>> candidates = new ArrayList<Map.Entry<Long, Long>>();
+		if (length < 0) {
+			return;
+		}
+		for (int i = 0; i < length; i++) {
+			String kmer = node_set.get(node_index).sequence.substring(i, i + kh.kmer_length);
+			long intval = baseOptions.kmerToIntval(kmer);
+			candidates = kh.get_reverse_candidates(intval, kh.kmer_hash);
+			if (candidates.size()<=1) {
+				continue;
+			}
+			long candidate = 0l;
+			for (Map.Entry<Long, Long> mapping : candidates) {
+				candidate = mapping.getKey();
+				if (!has_been_used(candidate)) {// 如果有未被使用的candidate
+					bifurcations.add(intval);
+					break;
+				}
+			}
+
+		}
+		//grow_and_branch(kh, node_index, bifurcations);
+		for (int i = bifurcations.size(); i > 0; i--) {
+
+		      long intval = bifurcations.get(i-1);
+		      
+		      Vector<Long> bifurcations_more = new Vector<Long>();
+		      String str = reverse_extend(intval, bifurcations_more, kh);
+		      String endkmer = str.substring(0,kh.kmer_length);
+		      long end_val = baseOptions.kmerToIntval(endkmer);
+		      List<Map.Entry<Long, Long>> candidates1 = new ArrayList<Map.Entry<Long, Long>>();
+		      candidates1=kh.get_reverse_candidates(end_val, kh.kmer_hash);
+		      
+		      if (candidates.size() > 0) {  // add bubble (possible)
+
+		        int bubble_val = add_reverse_bubble(node_index, str, kh); 
+		        if (bubble_val > 0)
+		          reverse_branches.add(bubble_val); 
+		      } else {    // add branch
+		      
+		        int bubble_val = add_reverse_branch(node_index, str,kh);
+		        if (bubble_val > 0)
+		          reverse_branches.add(bubble_val);
+		      } //else
+		    } // for
+	}
+
+	int add_reverse_branch(int node_p, String str,kmerHash kh) {
+
+	    int str_length = str.length()-kh.kmer_length;
+	    if (str_length >= kh.min_exon_length) {
+	 
+	      String end_kmer = str.substring(str.length()-kh.kmer_length, str.length());
+	      int start = node_set.get(node_p).sequence.indexOf(end_kmer);
+	      if (start == -1) {
+	        restore_kmers(str.substring(0, str.length()-1), kh);
+	        return -1;
+	      }
+	      if (kh.is_paired_end) {
+	        long count = kh.get_readset_count(kh.kmer_hash, baseOptions.kmerToIntval(end_kmer));
+	        boolean is_branch = check_reverse_branch_with_pair_info(kh, str, count);
+	        if (!is_branch) {
+	          restore_kmers(str.substring(0, str.length()-1), kh);
+	          return -1;
+	        }
+	      }
+	     // Node node1,node2;
+	      Node node1=new Node();
+	      Node node2=new Node();
+	      node1.sequence = node_set.get(node_p).sequence.substring(start);
+	      node2.sequence = str.substring(0, str_length);
+	      if (start == 0) {  // possible if not node 0
+	        int node2_index = add_node(node2);
+	        node_set.get(node2_index).addChildren(node_p);  // node1 is p 
+	        reverse_branches.add(node2_index);
+	        return node2_index;
+	      }
+
+	      if (is_similar(node_set.get(node_p).sequence.substring(0,start), node2.sequence,'R')) { 
+	        if (str_length > (int)start && node_p == 0) {
+	          node_set.get(node_p).sequence = str.substring(0, str_length) + node_set.get(node_p).sequence.substring(start);
+	          return -2;
+	        } else if (start > kh.kmer_length) {
+	          return -1;
+	        }
+	      }
+
+	      if (node_p == 0 && start < 2 * kh.kmer_length) {
+	        node_set.get(node_p).sequence = str.substring(0, str_length) + node_set.get(node_p).sequence.substring(start);
+	        return -2;
+	      }
+	      
+	      node_set.get(node_p).sequence=node_set.get(node_p).sequence.substring(0,start);
+	      int node1_index=add_node(node1);
+	      node_set.get(node1_index).children=node_set.get(node_p).children;
+	      node_set.get(node_p).children.clear();
+	      node_set.get(node_p).addChildren(node1_index);
+	      int node2_index=add_node(node2);
+	      node_set.get(node2_index).addChildren(node1_index);
+	      reverse_branches.add(node2_index);
+
+	      return node2_index;
+
+	    } else {
+	      return -1;
+	    }
+	  }
+	
+	
+	public int  add_reverse_bubble(int node_p, String str, kmerHash kh) {
+
+	    if (str.length() < 2 * kh.min_anchor_length)
+	    {
+	    	return -1;
+	    }
+	    //可能报错！
+	    String anchor_right = str.substring(str.length()-kh.kmer_length,str.length()-kh.kmer_length+kh.kmer_length);
+	    int start = node_set.get(node_p).sequence.indexOf(anchor_right);
+	    if (start == -1)  // possible if overlap 
+	      {
+	    	return -1;
+	      }
+
+	    String anchor_left = str.substring(0, kh.kmer_length-1);
+	    int node_q = -1;
+	    while (anchor_left.length() > kh.min_anchor_length) {
+	      node_q = find_node_index(anchor_left);
+	      if (node_q >= 0) break;
+	      anchor_left = anchor_left.substring(1);
+	    }
+	    Set<Integer> checked=new HashSet<Integer>();
+	    if (node_q < 0 || node_p == node_q || has_path(node_p, node_q, checked))
+	    {
+	    	return -1;
+	    }
+	    
+	    int anchor_length = anchor_left.length();
+
+	    int end = node_set.get(node_q).sequence.indexOf(anchor_left);
+	    if (anchor_length + end == node_set.get(node_q).sequence.length()) {
+	      int length = str.length() - anchor_length - kh.kmer_length;
+	      if (length > 0 && start > 0 && length + start < 10)
+	         {
+	    	  return -1;
+	         }
+
+	      Node node1=new Node();
+	      int node1_index=-1;
+	      //node_idx_t q1 = -1;
+	      if (length > 0) {
+	        node1.sequence = str.substring(anchor_length,length+anchor_length);
+	        node1_index = add_node(node1);
+	        reverse_branches.add(node1_index);
+	        node_set.get(node_q).addChildren(node1_index);
+	      } else {
+	        node1_index=node_q;
+	      }
+
+	      if (start == 0) {
+	       // node_set_[q1].add_child(p);
+	    	  node_set.get(node1_index).addChildren(node_p);
+	      } else {
+	        Node node2=new Node();
+	        node2.sequence = node_set.get(node_p).sequence.substring(start);
+	        int node2_index = add_node(node2);
+	        node_set.get(node1_index).addChildren(node2_index);
+	        node_set.get(node2_index).children=node_set.get(node_p).children;
+	        node_set.get(node_p).children.clear();
+	        node_set.get(node_p).addChildren(node2_index);
+	        node_set.get(node_p).sequence.substring(0,start);
+	      
+	      }
+
+	      if (node1_index!= node_q)
+	        return node1_index;
+	    }
+	   
+	    return -1;
+	  }
+	
 	public void grow_and_branch(kmerHash kh, int node_index, Vector<Long> bifurcations) {
 		while (bifurcations.size() > 0) {
 			long intval = bifurcations.lastElement();
@@ -783,31 +967,21 @@ public class SplicingGraph {
 					forward_branches.add(bubble_val);
 				}
 				if(bubble_val==-2){
-					
+					   bubble_val = add_branch(node_index, str, kh);
+					    if (bubble_val > 0) {
+				              forward_branches.add(bubble_val);
+					      //node_set_[r].sequence = node_set_[r].sequence.substr(g_kmer_length); 
+				        node_set.get(bubble_val).sequence= node_set.get(bubble_val).sequence.substring(kh.kmer_length);   
+					    }
+				}
+			}else{
+				int bubble_val=add_branch(node_index,str,kh);
+				if(bubble_val>0){
+					forward_branches.add(bubble_val);
+					node_set.get(bubble_val).sequence=node_set.get(bubble_val).sequence.substring(kh.kmer_length);
 				}
 			}
 
-			if (candidates.size() > 0) { // add bubble
-
-				node_idx_t r = add_bubble(p, sequence, kmer_map);
-				if (r > 0) {
-					forward_branches.insert(r);
-				} else if (r == -2) { // return -2 if branch //找不到q
-					r = add_branch(p, sequence, kmer_map, data);
-					if (r > 0) {
-						forward_branches.insert(r);
-						node_set_[r].sequence = node_set_[r].sequence.substr(g_kmer_length);
-					}
-				}
-			} else { // add a branch
-
-				node_idx_t r = add_branch(p, sequence, kmer_map, data);
-				if (r > 0) {
-					forward_branches.insert(r);
-					// change sequence of node r
-					node_set_[r].sequence = node_set_[r].sequence.substr(g_kmer_length);
-				}
-			}
 
 		} // while
 	}
@@ -1044,7 +1218,6 @@ public class SplicingGraph {
 	
 	//如果在扩展过程中找不到对应的q  则回不到主干，只能作为分支
 	  public int add_branch(int node_p,String branch,kmerHash kh) {
-
 	    if (node_set.get(node_p).sequence.length() <= kh.kmer_length)
 	    {
 	    	return -1;
@@ -1172,9 +1345,122 @@ public class SplicingGraph {
 					}
 
 			   } // else
-	   
-
 	    return is_branch;
 	  }
-		    
+	  public boolean check_reverse_branch_with_pair_info(kmerHash kh,String branch, long count) {
+
+		    boolean is_branch = false;
+		    size_t max_read_id = data.size() / 2;
+		    int str_length = static_cast<int>(str.length())-g_kmer_length;
+		    std::set<size_t> reads;
+		    int pos = str_length > 2*g_kmer_length ? (str_length - 2*g_kmer_length) : 0;
+		    set_reads(kmer_map, str.substr(pos, 2*g_kmer_length), reads);
+
+		    std::set<kmer_int_type_t> kmers_in_branch;
+		    if (g_double_stranded_mode) {
+		      for (int i = 0; i <= (int)str.length()-g_kmer_length; ++i) {
+		        kmer_int_type_t intval = kmer_to_intval(str.substr(i,g_kmer_length));
+		        kmer_int_type_t revcomp_intval = revcomp_val(intval, g_kmer_length);
+		        kmers_in_branch.insert(intval);
+		        kmers_in_branch.insert(revcomp_intval);
+		      }
+		    }
+
+		    int support = 0;
+		    int unsupport = 0;
+		    std::set<size_t>::const_iterator its;
+		    for (its = reads.begin(); its != reads.end(); ++its) {
+
+		      if (g_double_stranded_mode) { // non-strand specific
+		        if (compatible(str, data[*its])) {
+		          size_t mate_id ;
+		          if (*its < max_read_id)
+		            mate_id = *its + max_read_id;
+		          else
+		            mate_id = *its - max_read_id;
+		          const std::string& mate_read = data[mate_id];
+		          if (mate_read.find("N") != std::string::npos)
+		            continue;
+		     
+		          int used = 0;
+		          for (int i = 0; i <= (int)mate_read.length()-g_kmer_length; ++i) {
+		            kmer_int_type_t intval = kmer_to_intval(mate_read.substr(i,g_kmer_length));
+		            // used, but not used in this branch
+		            if (is_used(intval) && kmers_in_branch.find(intval) == kmers_in_branch.end())
+		              used++;
+		          }
+		          if (used == 0) {
+		            unsupport++;
+		            if ((unsupport >= g_min_ratio_welds * count) && (unsupport >= 0.5 * reads.size() + 2))
+		              break;
+		          } else if (used + 5 >= (int)mate_read.length() - g_kmer_length) {
+		            support++;
+		            if ((support >= g_min_ratio_welds * count) && (support >= g_min_reads_span_junction)) {
+		              is_branch = true;
+		              break;
+		            }
+		          }
+		        }
+		      } else { // strand-specfic mode
+
+		        if (g_fr_strand == 1) { // fr-firststrand
+		          if (*its >= max_read_id) { // --2--> ....... <--1--
+		            const std::string& mate_right = data[*its];
+		            if (compatible(str, mate_right)) {
+		              const std::string& mate_left = data[*its-max_read_id];
+		              if (mate_left.find("N") != std::string::npos)
+		                continue;
+		              int used = 0;
+		              for (int i = 0; i <= (int)mate_left.length() - g_kmer_length; ++i) {
+		                kmer_int_type_t intval = kmer_to_intval(mate_left.substr(i,g_kmer_length));
+		                if (is_used(intval))
+		                  used++;
+		              }
+
+		              if (used == 0) {
+		                unsupport++;
+		                if ((unsupport > g_min_ratio_welds * count) && (unsupport >= g_min_reads_span_junction))
+		                  break;
+		              } else if (used + 5 >= (int)mate_left.length()-g_kmer_length) {
+		                support++;
+		                if ((support >= g_min_ratio_welds * count) && (support >= g_min_reads_span_junction)) {
+		                  is_branch = true;
+		                  break;
+		                }
+		              }
+		            }
+		          }
+		        } else if (g_fr_strand == 2) { //--1--> ....... <--2--
+		          if (*its < max_read_id) {
+		            const std::string& mate_left = data[*its];
+		            if (compatible(str, mate_left)) {
+		              const std::string& mate_right = data[*its+max_read_id];
+		              if (mate_right.find("N") != std::string::npos)
+		                continue;
+		              unsigned int used = 0;
+		              for (unsigned int i = 0; i <= mate_right.length()-g_kmer_length; ++i) {
+		                kmer_int_type_t intval = kmer_to_intval(mate_right.substr(i,g_kmer_length));
+		                if (is_used(intval))
+		                  used++;
+		              }
+		              if (used == 0) {
+		                unsupport++;
+		                if ((unsupport >= g_min_ratio_welds * count) && (unsupport >= g_min_reads_span_junction))
+		                  break;
+		              } else if (used + 5 >= mate_right.length() - g_kmer_length) {
+		                support++;
+		                if ((support >= g_min_ratio_welds * count) && (support >= g_min_reads_span_junction)) {
+		                  is_branch = true;
+		                  break;
+		                }
+		              }
+		            }
+		          }
+		        }
+
+		      } // else (strand-spefic) 
+		    }
+
+		    return is_branch;
+		  }		    
 }
