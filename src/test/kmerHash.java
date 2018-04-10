@@ -8,8 +8,20 @@ import test.load_Read;
 
 public class kmerHash {
 	final int kmer_length = 25;
+	final int min_exon_length = 20;
+	final int fr_strand = 1;
+	final int min_seed_cov=2;
+	final float min_seed_entry=1.3f;
+	final float g_min_ratio_non_error = 0.5f;
+	final int pair_gap_length=200;
+	final int max_pair_gap_length=500;
+	final int min_anchor_length=5;
+	final int min_function_count=2;
+	final boolean is_paired_end=true;
+	final float min_ratio_welds=0.04f;
+	final int min_reads_span_junction=2;
 	Map<Long, Vector<Integer>> kmer_hash = new HashMap<Long, Vector<Integer>>();
-	float g_min_ratio_non_error = 0.5f;
+	
 	Map<Long, Long> kmer_map = new HashMap<Long, Long>();
 	List<Map.Entry<Long, Long>> list;
 
@@ -35,7 +47,7 @@ public class kmerHash {
 		}
 	}
 
-	private Vector<Integer> get_readset(long intval, Map<Long, Vector<Integer>> kmer_hash) {
+	public Vector<Integer> get_readset(long intval, Map<Long, Vector<Integer>> kmer_hash) {
 		return (Vector<Integer>) kmer_hash.get(intval);
 	}
 
@@ -47,7 +59,7 @@ public class kmerHash {
 		}
 	}
 
-	private long get_readset_count(Map<Long, Vector<Integer>> kmer_hash, long intval) {
+	public long get_readset_count(Map<Long, Vector<Integer>> kmer_hash, long intval) {
 		if (ifexist(kmer_hash, intval)) {
 			Vector readset = (Vector) kmer_hash.get(intval);
 			long count = readset.size();
@@ -60,14 +72,14 @@ public class kmerHash {
 	private void delete_bad_kmers(Map<Long, Vector<Integer>> kmer_hash) {
 		Vector delete_list = new Vector();
 		for (Iterator<Long> iterator = kmer_hash.keySet().iterator(); iterator.hasNext();) {
-			List<Map.Entry<Long,Long>> candidates=new ArrayList<Map.Entry<Long,Long>>();
+			List<Map.Entry<Long, Long>> candidates = new ArrayList<Map.Entry<Long, Long>>();
 			Long key = iterator.next();
 			Long candidate;
 			candidates = get_forward_candidates(key, kmer_hash);
 			long dominate_count = 0;
 			if (candidates.size() > 0) {
 				for (Map.Entry<Long, Long> mapping : candidates) {
-					candidate=mapping.getKey();
+					candidate = mapping.getKey();
 					if (mapping.getValue() > 0) {
 						long candidate_count = mapping.getValue();
 						if (dominate_count == 0) {
@@ -79,15 +91,15 @@ public class kmerHash {
 				}
 			}
 		}
-		 System.out.println("之前的hash");
-		 System.out.println(kmer_hash.size());
+		System.out.println("之前的hash");
+		System.out.println(kmer_hash.size());
 		if (!delete_list.isEmpty()) {
 			for (int j = 0; j < delete_list.size(); j++) {
 				long delete_kmer = (long) delete_list.get(j);
 				kmer_hash.remove(delete_kmer);
 			}
 		}
-System.out.println(kmer_hash.size());
+		System.out.println(kmer_hash.size());
 	}
 
 	private boolean if_find_kmer(long intval, Map<Long, Vector<Integer>> kmer_hash) {
@@ -141,15 +153,18 @@ System.out.println(kmer_hash.size());
 					reverse_candidates.put(temp2, read_count);
 				}
 
-				list_reverse = new ArrayList<Map.Entry<Long, Long>>(reverse_candidates.entrySet());
-
-				// 通过比较器实现比较排序
-				Collections.sort(list_reverse, new Comparator<Map.Entry<Long, Long>>() {
-					public int compare(Map.Entry<Long, Long> o1, Map.Entry<Long, Long> o2) {
-						return o2.getValue().compareTo(o1.getValue()); // 倒序
-					}
-				});
 			}
+			// if(reverse_candidates.size()==0){
+			// return null;
+			// }
+			list_reverse = new ArrayList<Map.Entry<Long, Long>>(reverse_candidates.entrySet());
+
+			// 通过比较器实现比较排序
+			Collections.sort(list_reverse, new Comparator<Map.Entry<Long, Long>>() {
+				public int compare(Map.Entry<Long, Long> o1, Map.Entry<Long, Long> o2) {
+					return o2.getValue().compareTo(o1.getValue()); // 倒序
+				}
+			});
 			return list_reverse;
 		} else {
 			return null;
@@ -189,7 +204,7 @@ System.out.println(kmer_hash.size());
 		// kmer_length) + ":" + mapping.getValue()
 		// + " intval:" + mapping.getKey());
 		// }
-return list;
+		return list;
 	}
 
 	public static void main(String args[]) throws IOException {
@@ -203,18 +218,33 @@ return list;
 		kh.delete_bad_kmers(kh.kmer_hash);
 		// kh.get_reverse_candidates(110653935488931, kh.kmer_hash);
 		kh.sort_kmer(kh.kmer_hash);
-		List listK=kh.sort_kmer(kh.kmer_hash);
-		if(listK.size()==0){
+		List listK = kh.sort_kmer(kh.kmer_hash);
+		if (listK.size() == 0) {
 			System.out.println("没有数据！");
 			return;
 		}
-		System.out.println("***********************");
+		System.out.println(listK.size());
 		// System.out.println(kh.list.toString());
-		//create_graph cg = new create_graph();
-		//cg.init_graph(kh);
-		SplicingGraph sg=new SplicingGraph();
-		sg.init_graph(kh);
-		System.out.println("---------------------------------");
+		// create_graph cg = new create_graph();
+		// cg.init_graph(kh);
+		int count=0;
+		Set node_jihe=new HashSet();
+		for(int i=0;i<50;i++){
+			SplicingGraph sg = new SplicingGraph();
+			if(!sg.has_been_used(kh.list.get(i).getKey())){
+		    sg.init_trunk(kh,kh.list.get(i).getKey(),node_jihe);
+		    System.out.println("-----------------------------");
+		    count++;
+		    }
+		}
+		System.out.println(node_jihe.size());
+		System.out.println("优化开始！");
+		SplicingGraph sg = new SplicingGraph();
+		sg.rewrite_nodeSet(node_jihe);
+//		SplicingGraph sg = new SplicingGraph();
+//	    sg.init_trunk(kh,kh.list.get(0).getKey());
+//		// sg.init_graph(kh);
+		System.out.println("结束！"+"node_jihe:"+sg.node_set.get(0).getSequence());
 		// String kmer= baseOptions.intvalToKmer(110653935488931l,
 		// kh.kmer_length);
 		// long kmer_int=110653935488931l>>2;

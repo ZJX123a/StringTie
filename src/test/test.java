@@ -1,10 +1,15 @@
 package test;
 public class test {
 	public static void main(String args[]){
+		
 		//System.out.println("hello");
 		SplicingGraph sg=new SplicingGraph();
-		SplicingGraph.Node node=sg.new Node();
-		sg.add_node();
+	//	sg.init_graph(kh);
+//		SplicingGraph.Node node=sg.new Node();
+//		node.setSequence("hulatang");
+//		System.out.println(sg.add_node(node));
+//		node.setSequence("jokml");
+//		System.out.println(sg.add_node(node));
 	//	node node=new Node();
 //		node.setSequence("vghgbkhkbhkbhj");
 //		System.out.println(node.getSequence());

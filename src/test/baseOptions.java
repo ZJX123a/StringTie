@@ -112,9 +112,9 @@ public class baseOptions {
 		return kmer;
 	}
 
-	float computeEntropy(String kmer) {
+	public static float computeEntropy(String kmer) {
 		int length = kmer.length();
-		int a[] = null;
+		int a[] =new int[4];
 		float entropy = 0;
 		for (int i = 0;i < length;i++) {
 			if(kmer.charAt(i)=='A'){
