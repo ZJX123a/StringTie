@@ -238,6 +238,8 @@ public class kmerHash {
 		sg.rewrite_nodeSet(node_jihe);
 		System.out.println("开始有"+sg.node_set.size()+"个点");
 		sg.reunit_used_kmers(sg.node_set, kh);
+		//sg.forward_check_and_extend(kh, 0);
+	
 		for(int i=0;i<sg.node_set.size();i++){
 			sg.forward_check_and_extend(kh, i);
 			sg.reverse_check_and_extend(kh, i);
@@ -248,6 +250,14 @@ public class kmerHash {
 			System.out.println("父节点："+sg.node_set.get(i).getParents());
 			System.out.println("子节点："+sg.node_set.get(i).getChildren());
 		}
-		System.out.println(sg.used_kmers.containsKey(49792356283881l));
+		
+//		for(int i=0;i<sg.node_set.size();i++){
+//			System.out.println("顶点编号："+i+"     顶点序列:"+sg.node_set.get(i).getSequence());
+//			System.out.println("父节点："+sg.node_set.get(i).getParents());
+//			System.out.println("子节点："+sg.node_set.get(i).getChildren());
+//		}
+//		System.out.println(baseOptions.intvalToKmer(421861858629527l, kh.kmer_length));
+//		System.out.println(baseOptions.intvalToKmer(176516117687168l, kh.kmer_length));
+
 	}
 }
