@@ -999,6 +999,11 @@ public class SplicingGraph {
 		int end = node_set.get(node_q).sequence.indexOf(anchor_right);
 
 		// 根据连接处的cov判断是否可以连接
+		//System.out.println(0.5 * anchor_left_length+kh.kmer_length);
+		//System.out.println(str.length());
+		if((0.5 * anchor_left_length + kh.kmer_length)>kh.kmer_length){
+			return -1;
+		}
 		String jun1 = str.substring((int) (0.5 * anchor_left_length),
 				(int) (0.5 * anchor_left_length + kh.kmer_length));
 		long jun1_cov = kh.get_readset_count(kh.kmer_hash, baseOptions.kmerToIntval(jun1));
@@ -1048,16 +1053,16 @@ public class SplicingGraph {
 			}
 			Node node1 = new Node();
 			Node node2 = new Node();
-			System.out.println("&&&&&&&:"+node_set.get(node_p).sequence);
+			//System.out.println("&&&&&&&:"+node_set.get(node_p).sequence);
 			node1.sequence = node_set.get(node_p).sequence.substring(end);
 			
 			int node1_index = add_node(node1);
-			System.out.println("&&&&&&&:"+node_set.get(node1_index).sequence);
-			System.out.println("p的孩子："+node_set.get(node_p).children);
+			//System.out.println("&&&&&&&:"+node_set.get(node1_index).sequence);
+			//System.out.println("p的孩子："+node_set.get(node_p).children);
 			for(int i=0;i<node_set.get(node_p).children.size();i++){
 				node_set.get(node1_index).addChildren(node_set.get(node_p).children.get(i));
 			}
-			System.out.println("node1的孩子："+node_set.get(node1_index).children);
+			//System.out.println("node1的孩子："+node_set.get(node1_index).children);
 			node_set.get(node_p).children.clear();
 			int node2_index = -1;
 			if (distance <= 0) { // 此时length>0
@@ -1092,7 +1097,7 @@ public class SplicingGraph {
 			} else {
 				node_set.get(node_p).addChildren(node1_index);
 			}
-			System.out.println("node1的孩子："+node_set.get(node1_index).children);
+			//System.out.println("node1的孩子："+node_set.get(node1_index).children);
 
 			return node2_index; // 新增顶点标号
 		} else {
@@ -1279,6 +1284,9 @@ public class SplicingGraph {
 	public boolean check_forward_branch_with_pair_info(kmerHash kh, String branch, long count) {
 		// 计算左边的paired_end_read
 		boolean is_branch = false;
+		if(3*kh.kmer_length>branch.length()){
+			return false;
+		}
 		String check = branch.substring(kh.kmer_length, 3 * kh.kmer_length);
 		int middle_read_id = load_Read.read_vector.size() / 2;
 		Set<Integer> reads = new HashSet<Integer>();
