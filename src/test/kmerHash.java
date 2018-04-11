@@ -133,6 +133,9 @@ public class kmerHash {
 					}
 				});
 			}
+//			System.out.println(forward_candidates);
+//			System.out.println(list_forward);
+//			System.out.println();
 			return list_forward;
 		}
 		return null;
@@ -150,6 +153,7 @@ public class kmerHash {
 				temp2 = baseOptions.kmerToIntval(baseOptions.intvalToKmer(temp2, kmer_length));
 				if (ifexist(kmer_hash, temp2)) {
 					long read_count = get_readset_count(kmer_hash, temp2);
+					//System.out.println(temp2+"    "+read_count);
 					reverse_candidates.put(temp2, read_count);
 				}
 
@@ -210,51 +214,40 @@ public class kmerHash {
 	public static void main(String args[]) throws IOException {
 		load_Read.load_reads();
 		kmerHash kh = new kmerHash();
+		
 		kh.readsToKmer(kh.kmer_hash);
-		// kh.print_kmerhash(kh.kmer_hash);
-		System.out.println("***********************");
-
-		// print_kmerhash();
-		kh.delete_bad_kmers(kh.kmer_hash);
-		// kh.get_reverse_candidates(110653935488931, kh.kmer_hash);
 		kh.sort_kmer(kh.kmer_hash);
 		List listK = kh.sort_kmer(kh.kmer_hash);
 		if (listK.size() == 0) {
 			System.out.println("没有数据！");
 			return;
 		}
-		System.out.println(listK.size());
-		// System.out.println(kh.list.toString());
-		// create_graph cg = new create_graph();
-		// cg.init_graph(kh);
+		else{
+			System.out.println("有"+listK.size()+"个可用kmer");
+		}
 		int count=0;
 		Set node_jihe=new HashSet();
 		SplicingGraph sg = new SplicingGraph();
-		for(int i=0;i<3000;i++){
-			
+		System.out.println("初始used_kmers:"+sg.used_kmers.size());
+		for(int i=0;i<listK.size();i++){
 			if(!sg.has_been_used(kh.list.get(i).getKey())){
-		    sg.init_trunk(kh,kh.list.get(i).getKey(),node_jihe);
-			//	sg.bulid_graph(kh, kh.list.get(i).getKey(), node_jihe);
-		    System.out.println("-----------------------------");
-		    count++;
+			    sg.init_trunk(kh,kh.list.get(i).getKey(),node_jihe,sg);
+			    count++;
 		    }
 		}
-		System.out.println(node_jihe.size());
-		System.out.println("优化开始！");
-		//SplicingGraph sg = new SplicingGraph();
 		sg.rewrite_nodeSet(node_jihe);
-		sg.forward_check_and_extend(kh, 0);
-//		SplicingGraph sg = new SplicingGraph();
-//	    sg.init_trunk(kh,kh.list.get(0).getKey());
-//		// sg.init_graph(kh);
-		//sg.bulid_graph(kh, seed_val, node_jihe)
-		System.out.println("构图之后："+sg.node_set.size());
-		System.out.println("结束！"+"顶点长度"+sg.node_set.get(0).getSequence().length()+"     "+sg.node_set.get(0).getSequence());
-		// String kmer= baseOptions.intvalToKmer(110653935488931l,
-		// kh.kmer_length);
-		// long kmer_int=110653935488931l>>2;
-		// kmer_int=kmer_int|(2l<<(2*kh.kmer_length-2));
-		// System.out.println(baseOptions.intvalToKmer(kmer_int,
-		// kh.kmer_length));
+		System.out.println("开始有"+sg.node_set.size()+"个点");
+		sg.reunit_used_kmers(sg.node_set, kh);
+		for(int i=0;i<sg.node_set.size();i++){
+			sg.forward_check_and_extend(kh, i);
+			sg.reverse_check_and_extend(kh, i);
+		}
+		sg.init_parents();
+		for(int i=0;i<sg.node_set.size();i++){
+			System.out.println("顶点编号："+i+"     顶点序列:"+sg.node_set.get(i).getSequence());
+			System.out.println("父节点："+sg.node_set.get(i).getParents());
+			System.out.println("子节点："+sg.node_set.get(i).getChildren());
+		}
+		System.out.println(sg.used_kmers.containsKey(49792356283881l));
 	}
 }
