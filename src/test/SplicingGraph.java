@@ -696,7 +696,7 @@ public class SplicingGraph {
 
 
 	public void forward_check_and_extend(kmerHash kh, int node_index) {
-		System.out.println("处理第"+node_index+"个顶点"+"   "+node_set.get(node_index).sequence);
+		//System.out.println("处理第"+node_index+"个顶点"+"   "+node_set.get(node_index).sequence);
 		int length = node_set.get(node_index).sequence.length() - kh.kmer_length;
 		Vector<Long> bifurcations = new Vector<Long>();
 		List<Map.Entry<Long, Long>> candidates = new ArrayList<Map.Entry<Long, Long>>();
@@ -721,7 +721,7 @@ public class SplicingGraph {
 			}
 
 		}
-		System.out.println("该顶点的分叉点为"+bifurcations);
+		//System.out.println("该顶点的分叉点为"+bifurcations);
 		grow_and_branch(kh, node_index, bifurcations);
 	}
 
@@ -752,9 +752,9 @@ public class SplicingGraph {
 		}
 		// grow_and_branch(kh, node_index, bifurcations);
 		for (int i = bifurcations.size(); i > 0; i--) {
-
+			System.out.println("顶点"+node_index+"进行了reverse_check_and_extend!");
 			long intval = bifurcations.get(i - 1);
-
+			//System.out.println("分叉点为："+baseOptions.intvalToKmer(intval, kh.kmer_length));
 			Vector<Long> bifurcations_more = new Vector<Long>();
 			String str = reverse_extend(intval, bifurcations_more, kh);
 			String endkmer = str.substring(0, kh.kmer_length);
@@ -765,17 +765,30 @@ public class SplicingGraph {
 			if (candidates.size() > 0) { // add bubble (possible)
 
 				int bubble_val = add_reverse_bubble(node_index, str, kh);
-				if (bubble_val > 0)
+				if (bubble_val > 0){
 					reverse_branches.add(bubble_val);
+					System.out.println("reverse_branches成功！");
+				}
 			} else { // add branch
 
 				int bubble_val = add_reverse_branch(node_index, str, kh);
 				if (bubble_val > 0)
+					System.out.println("reverse_branches成功！");
+
 					reverse_branches.add(bubble_val);
 			} // else
 		} // for
 	}
 
+	public void reverse_check_and_extend(kmerHash kh){
+		for(int i=0;i<node_set.size();i++){
+//			if(forward_branches.contains(i)){
+//				continue;
+//			}
+			reverse_check_and_extend(kh,i);
+		}
+	}
+	
 	int add_reverse_branch(int node_p, String str, kmerHash kh) {
 
 		int str_length = str.length() - kh.kmer_length;
@@ -918,7 +931,7 @@ public class SplicingGraph {
 	public void grow_and_branch(kmerHash kh, int node_index, Vector<Long> bifurcations) {
 		while (bifurcations.size() > 0) {
 			long intval = bifurcations.lastElement();
-			System.out.println("处理分叉点："+intval);
+			//System.out.println("处理分叉点："+intval);
 			bifurcations.remove(bifurcations.size() - 1);
 			Vector<Long> bifurcations_more = new Vector<Long>();
 			String str = forward_extend(intval, bifurcations_more, kh);
@@ -934,7 +947,7 @@ public class SplicingGraph {
 			if (candidates.size() > 0) {
 				int bubble_val = add_bubble(node_index, str, kh);
 				if (bubble_val > 0) {
-					System.out.println("add_bubble成功！");
+				//	System.out.println("add_bubble成功！");
 					forward_branches.add(bubble_val);
 				}
 				if (bubble_val == -2) {
@@ -1001,9 +1014,9 @@ public class SplicingGraph {
 		// 根据连接处的cov判断是否可以连接
 		//System.out.println(0.5 * anchor_left_length+kh.kmer_length);
 		//System.out.println(str.length());
-		if((0.5 * anchor_left_length + kh.kmer_length)>kh.kmer_length){
-			return -1;
-		}
+//		if((0.5 * anchor_left_length + kh.kmer_length)>kh.kmer_length){
+//			return -1;
+//		}
 		String jun1 = str.substring((int) (0.5 * anchor_left_length),
 				(int) (0.5 * anchor_left_length + kh.kmer_length));
 		long jun1_cov = kh.get_readset_count(kh.kmer_hash, baseOptions.kmerToIntval(jun1));
@@ -1446,7 +1459,7 @@ public class SplicingGraph {
 		String trunk = left + right.substring(kh.kmer_length);
 		Node trunkN = new Node();
 		trunkN.sequence = trunk;
-		if (trunkN.sequence.length() < 200) {
+		if (trunkN.sequence.length() <= 25) {
 			return false;
 		}
 		//SplicingGraph splicing_graph = new SplicingGraph();
@@ -1461,11 +1474,11 @@ public class SplicingGraph {
 		// splicing_graph.node_set.get(0).sequence.length() + " "
 		// + splicing_graph.node_set.get(0).sequence);
 		// System.out.println();
-		splicing_graph.forward_extend_use_pairInfo(kh, load_Read.read_vector, p, bifurcation);
+//		splicing_graph.forward_extend_use_pairInfo(kh, load_Read.read_vector, p, bifurcation);
 		// System.out.println("paired——end扩展：" + " size:" +
 		// splicing_graph.node_set.get(0).sequence.length() + " "
 		// + splicing_graph.node_set.get(0).sequence);
-		splicing_graph.reverse_extend_use_pairInfo(kh, load_Read.read_vector, p, bifurcation);
+//		splicing_graph.reverse_extend_use_pairInfo(kh, load_Read.read_vector, p, bifurcation);
 
 		node_jihe.add(splicing_graph.node_set.get(p).sequence);
 		//System.out.println(bifurcation);

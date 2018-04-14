@@ -1,7 +1,6 @@
 package test;
 
 import java.io.IOException;
-import test.create_graph;
 import java.util.*;
 import test.baseOptions;
 import test.load_Read;
@@ -230,19 +229,23 @@ public class kmerHash {
 		SplicingGraph sg = new SplicingGraph();
 		System.out.println("初始used_kmers:"+sg.used_kmers.size());
 		for(int i=0;i<listK.size();i++){
-			if(!sg.has_been_used(kh.list.get(i).getKey())){
+			System.out.println(baseOptions.intvalToKmer(kh.list.get(i).getKey(), kh.kmer_length));
+			//if(!sg.has_been_used(kh.list.get(i).getKey())){
 			    sg.init_trunk(kh,kh.list.get(i).getKey(),node_jihe,sg);
 			    count++;
-		    }
+		   // }
 		}
 		sg.rewrite_nodeSet(node_jihe);
 		System.out.println("开始有"+sg.node_set.size()+"个点");
 		sg.reunit_used_kmers(sg.node_set, kh);
 		//sg.forward_check_and_extend(kh, 0);
-	
+	System.out.println("初始节点如下：");
+	for(int i=0;i<sg.node_set.size();i++){
+		System.out.println("顶点编号："+i+"     顶点序列:"+sg.node_set.get(i).getSequence());
+	}
 		for(int i=0;i<sg.node_set.size();i++){
 			sg.forward_check_and_extend(kh, i);
-			sg.reverse_check_and_extend(kh, i);
+			sg.reverse_check_and_extend(kh);
 		}
 		sg.init_parents();
 		for(int i=0;i<sg.node_set.size();i++){
@@ -250,8 +253,10 @@ public class kmerHash {
 			System.out.println("父节点："+sg.node_set.get(i).getParents());
 			System.out.println("子节点："+sg.node_set.get(i).getChildren());
 		}
-		System.out.println("运行结束！");
-		
+		System.out.println("运行结束！当前节点个数为："+sg.node_set.size());
+		System.out.println("开始构图！");
+		flow_network fn=new flow_network();
+//		fn.init_graph(sg);
 //		for(int i=0;i<sg.node_set.size();i++){
 //			System.out.println("顶点编号："+i+"     顶点序列:"+sg.node_set.get(i).getSequence());
 //			System.out.println("父节点："+sg.node_set.get(i).getParents());
